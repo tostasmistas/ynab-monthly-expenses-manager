@@ -1,12 +1,16 @@
-<img align="left" src="build/appicon.png" width="50" height="50">
+<p align="center">
+  <img src="build/appicon.png" width="80px" height="80px">
+</p>
 
-## &nbsp;YNAB Monthly Expenses Manager
+<h2 align="center">YNAB Monthly Expenses Manager</h2>
 
----
+<br />
 
 **YNAB Monthly Expenses Manager** is a personalized application crafted to simplify the process of managing and inputting monthly household expenses into [YNAB](https://www.ynab.com/), a zero-based budgeting tool.
 
----
+<p align="center">
+  <img width="700" alt="Screenshot 2024-01-24 at 22 24 10" src="https://github.com/tostasmistas/ynab-monthly-expenses-manager/assets/11311824/1ea183bb-cbbb-4d61-bdb2-0e96dc44f738">
+</p>
 
 ## 💰 About
 
@@ -24,8 +28,6 @@ This challenge motivated me to create a personalized application that simplifies
 This application is customized based on my YNAB budget data and is primarily intended for personal use.
 While it may not be suitable for general use, feel free to explore and use it as a reference for building your own personalized solution.
 If you have questions or suggestions for improvement, let's connect and make managing YNAB budgets even more efficient! 🤝
-
----
 
 ## 📖 How to use
 
@@ -46,6 +48,8 @@ The application utilizes a rounding algorithm to fairly distribute shared monthl
 
 <details>
 <summary>Expense split example</summary>
+
+ <p>
 
 Suppose the total shared monthly expenses are:
 
@@ -69,6 +73,7 @@ Applying the algorithm step by step:
 
 - TV / Internet / Phone:
   - The individual share is `85.90€ / 2 = 42.95€`, which is an exact division by 2, so no rounding is required.
+
 </details>
 
 3. **YNAB integration**
@@ -78,8 +83,6 @@ After inputting and splitting the monthly household expenses, the final step is 
 For the shared expenses, under the shared budget in YNAB and for the shared monthly expenses account, distinct transactions are created for each category. These transactions detail the expense amount, the payee, and the billing cycle in the memo field.
 
 For the individual share, under the individual budget in YNAB and for the individual monthly expenses account, a main transaction is created encompassing the total individual share amount. Sub-transactions are nested within, capturing each individual's share for every expense category.
-
---- 
 
 ## 🧑‍💻 Development mode
 
@@ -92,5 +95,3 @@ This application is built using [Wails](https://wails.io/) and uses Go on the ba
 - [Node.js v15+](https://nodejs.org/en/download/)
 
 To develop the application locally clone the repository and in the root directory run the command `wails dev` and in the frontend directory run the command `npm run dev`.
-
----
