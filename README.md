@@ -25,7 +25,10 @@ This challenge motivated me to create a personalized application that simplifies
 
 - **YNAB integration**: Seamlessly integrates with YNAB, automatically inputting the shared and individual expense transactions.
 
-This application is customized based on my YNAB budget data and is primarily intended for personal use.
+<br />
+
+> [!NOTE]  
+> This application is customized based on my YNAB budget data and is primarily intended for personal use.
 While it may not be suitable for general use, feel free to explore and use it as a reference for building your own personalized solution.
 If you have questions or suggestions for improvement, let's connect and make managing YNAB budgets even more efficient! 🤝
 
@@ -49,7 +52,7 @@ The application utilizes a rounding algorithm to fairly distribute shared monthl
 <details>
 <summary>Expense split example</summary>
 
- <p>
+<br />
 
 Suppose the total shared monthly expenses are:
 
@@ -83,6 +86,9 @@ After inputting and splitting the monthly household expenses, the final step is 
 For the shared expenses, under the shared budget in YNAB and for the shared monthly expenses account, distinct transactions are created for each category. These transactions detail the expense amount, the payee, and the billing cycle in the memo field.
 
 For the individual share, under the individual budget in YNAB and for the individual monthly expenses account, a main transaction is created encompassing the total individual share amount. Sub-transactions are nested within, capturing each individual's share for every expense category.
+
+> [!WARNING]  
+> Without a valid YNAB Personal Access Token, the application won't load properly.
 
 ## 🧑‍💻 Development mode
 
