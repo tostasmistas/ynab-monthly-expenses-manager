@@ -10,7 +10,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// MonthlyExpense represents a monthly expense
+// MonthlyExpense represents a monthly expense with its YNAB category id, payee name, amount, and memo
 type MonthlyExpense struct {
 	CategoryId *string         `json:"category_id" mapstructure:"category_id"`
 	PayeeName  *string         `json:"payee_name" mapstructure:"payee_name"`
@@ -18,18 +18,21 @@ type MonthlyExpense struct {
 	Memo       *string         `json:"memo" mapstructure:"memo"`
 }
 
+// MonthlyExpenses represents a collection of monthly expenses per category for a specific YNAB budget and account
 type MonthlyExpenses struct {
 	BudgetId  string                     `json:"budget_id" mapstructure:"budget_id"`
 	AccountId string                     `json:"account_id" mapstructure:"account_id"`
 	Expenses  map[string]*MonthlyExpense `json:"expenses" mapstructure:"expenses"`
 }
 
+// IsValid checks if a collection of monthly expenses is valid by ensuring a non-empty YNAB budget id and account id, and having exactly 4 monthly expenses
 func (monthlyExpenses *MonthlyExpenses) IsValid() bool {
 	return monthlyExpenses.AccountId != "" &&
 		monthlyExpenses.BudgetId != "" &&
-		len(monthlyExpenses.Expenses) > 0
+		len(monthlyExpenses.Expenses) == 4
 }
 
+// GetSharedMonthlyExpensePayeeName returns the predefined payee name for a given shared monthly expense category
 func GetSharedMonthlyExpensePayeeName(categoryName string) string {
 	var payeeName string
 
@@ -47,6 +50,7 @@ func GetSharedMonthlyExpensePayeeName(categoryName string) string {
 	return payeeName
 }
 
+// GetSharedMonthlyExpenseMemo returns the predefined memo for a given shared monthly expense category
 func GetSharedMonthlyExpenseMemo(categoryName string) string {
 	switch categoryName {
 	case "Condominium":
@@ -65,6 +69,7 @@ func GetSharedMonthlyExpenseMemo(categoryName string) string {
 	}
 }
 
+// getSharedMonthlyExpenseBillingCycleMemo returns the predefined memo, based on the billing cycle, of a shared expense
 func getSharedMonthlyExpenseBillingCycleMemo(billingCycleStart int, billingCycleEnd int) string {
 	currentMonth := time.Now()
 	pastMonth := time.Now().AddDate(0, -1, 0)
@@ -76,14 +81,17 @@ func getSharedMonthlyExpenseBillingCycleMemo(billingCycleStart int, billingCycle
 	)
 }
 
+// GetIndividualMonthlyExpensePayeeName returns the predefined payee name for an individual monthly expense
 func GetIndividualMonthlyExpensePayeeName() string {
 	return fmt.Sprintf("Transfer: %s", SharedBudgetName)
 }
 
+// GetIndividualMonthlyExpenseMemo returns the predefined memo for an individual monthly expense
 func GetIndividualMonthlyExpenseMemo() string {
 	return time.Now().Format("January 2006")
 }
 
+// SplitSharedMonthlyExpenses calculates the individual share for each monthly expense category
 func SplitSharedMonthlyExpenses(sharedMonthlyExpenses MonthlyExpenses, individualMonthlyExpenses *MonthlyExpenses) {
 	roundUp := rand.Float64() <= 0.4
 
@@ -106,6 +114,7 @@ func SplitSharedMonthlyExpenses(sharedMonthlyExpenses MonthlyExpenses, individua
 	}
 }
 
+// CreateIndividualMonthlyExpensesTransactions creates the YNAB transactions for the individual monthly expenses
 func (monthlyExpenses *MonthlyExpenses) CreateIndividualMonthlyExpensesTransactions(client APIClient) bool {
 	var subTransactions []SaveSubTransaction
 	var sampleExpense MonthlyExpense
@@ -141,6 +150,7 @@ func (monthlyExpenses *MonthlyExpenses) CreateIndividualMonthlyExpensesTransacti
 	return err == nil
 }
 
+// CreateSharedMonthlyExpensesTransactions creates the YNAB transactions for the shared monthly expenses
 func (monthlyExpenses *MonthlyExpenses) CreateSharedMonthlyExpensesTransactions(client APIClient) bool {
 	var transactions []SaveTransaction
 

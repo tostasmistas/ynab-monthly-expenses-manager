@@ -1,6 +1,11 @@
 package backend
 
-// BudgetSummary represents the summary of a budget
+import (
+	"github.com/forPelevin/gomoji"
+)
+
+// BudgetSummary represents the summary of a YNAB budget
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type BudgetSummary struct {
 	Id             string         `json:"id"`
 	Name           string         `json:"name"`
@@ -12,10 +17,14 @@ type BudgetSummary struct {
 	Accounts       Accounts       `json:"accounts"`
 }
 
+// DateFormat represents the date format setting for a YNAB budget
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type DateFormat struct {
 	Format string `json:"format"`
 }
 
+// CurrencyFormat represents the currency format setting for a YNAB budget
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type CurrencyFormat struct {
 	IsoCode          string `json:"iso_code"`
 	ExampleFormat    string `json:"example_format"`
@@ -27,21 +36,22 @@ type CurrencyFormat struct {
 	DisplaySymbol    bool   `json:"display_symbol"`
 }
 
-type Budgets struct {
-	SharedBudget     BudgetSummary `json:"shared_budget"`
-	IndividualBudget BudgetSummary `json:"individual_budget"`
-}
+// Budgets represents a collection of YNAB budgets
+type Budgets []BudgetSummary
 
+// SharedBudgetName is the predefined name of the shared YNAB budget
 const SharedBudgetName string = "Casa Reis-Pereira"
+
+// IndividualBudgetName is the predefined name of the individual YNAB budget
 const IndividualBudgetName string = "Magui"
 
-// GetBudgets fetches the list of budgets
+// GetBudgets fetches the list of YNAB budgets
 // GET https://api.ynab.com/v1/budgets
-func (client *APIClient) GetBudgets() ([]BudgetSummary, error) {
+func (client *APIClient) GetBudgets() (Budgets, error) {
 	budgetsResponse := struct {
 		Data struct {
-			Budgets       []BudgetSummary `json:"budgets"`
-			DefaultBudget BudgetSummary   `json:"default_budget"`
+			Budgets       Budgets       `json:"budgets"`
+			DefaultBudget BudgetSummary `json:"default_budget"`
 		} `json:"data"`
 	}{}
 
@@ -57,4 +67,15 @@ func (client *APIClient) GetBudgets() ([]BudgetSummary, error) {
 	}
 
 	return budgetsResponse.Data.Budgets, nil
+}
+
+// GetBudget fetches a YNAB budget based on its name
+func (budgets *Budgets) GetBudget(budgetName string) BudgetSummary {
+	for _, budget := range *budgets {
+		if gomoji.RemoveEmojis(budget.Name) == budgetName {
+			return budget
+		}
+	}
+
+	return BudgetSummary{}
 }

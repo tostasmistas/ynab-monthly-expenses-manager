@@ -5,7 +5,8 @@ import (
 	"strings"
 )
 
-// CategoryGroup represents a category group
+// CategoryGroup represents a YNAB category group
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type CategoryGroup struct {
 	Id      string `json:"id"`
 	Name    string `json:"name"`
@@ -13,7 +14,8 @@ type CategoryGroup struct {
 	Deleted bool   `json:"deleted"`
 }
 
-// Category represents a category
+// Category represents a YNAB category
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type Category struct {
 	Id                     string `json:"id"`
 	CategoryGroupId        string `json:"category_group_id"`
@@ -39,7 +41,8 @@ type Category struct {
 	Deleted                bool   `json:"deleted"`
 }
 
-// CategoryGroupWithCategories represents a category group with its categories
+// CategoryGroupWithCategories represents a YNAB category group with its categories
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type CategoryGroupWithCategories struct {
 	Id         string     `json:"id"`
 	Name       string     `json:"name"`
@@ -48,9 +51,10 @@ type CategoryGroupWithCategories struct {
 	Categories []Category `json:"categories"`
 }
 
+// CategoryGroupsWithCategories represents a collection of YNAB category groups with their categories.
 type CategoryGroupsWithCategories []CategoryGroupWithCategories
 
-// GetCategories fetches the categories of a budget
+// GetCategories fetches the YNAB categories of a YNAB budget
 // GET https://api.ynab.com/v1/budgets/{budget_id}/categories
 func (client *APIClient) GetCategories(budgetId string) (CategoryGroupsWithCategories, error) {
 	categoriesResponse := struct {
@@ -71,6 +75,7 @@ func (client *APIClient) GetCategories(budgetId string) (CategoryGroupsWithCateg
 	return categoriesResponse.Data.CategoryGroups, nil
 }
 
+// GetMonthlyExpensesCategories fetches the YNAB categories related to monthly expenses
 func (categoryGroups *CategoryGroupsWithCategories) GetMonthlyExpensesCategories() []Category {
 	var monthlyExpensesCategories []Category
 

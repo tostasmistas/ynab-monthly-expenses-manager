@@ -4,7 +4,8 @@ import (
 	"fmt"
 )
 
-// TransactionSummary represents the summary of a transaction
+// TransactionSummary represents the summary of a YNAB transaction
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type TransactionSummary struct {
 	Id                      string `json:"id"`
 	Date                    string `json:"date"`
@@ -26,7 +27,8 @@ type TransactionSummary struct {
 	Deleted                 bool   `json:"deleted"`
 }
 
-// TransactionDetail represents the details of a transaction
+// TransactionDetail represents the details of a YNAB transaction
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type TransactionDetail struct {
 	TransactionSummary
 	AccountName     string           `json:"account_name"`
@@ -35,7 +37,8 @@ type TransactionDetail struct {
 	SubTransactions []SubTransaction `json:"subtransactions"`
 }
 
-// SubTransaction represents a sub-transaction of a transaction
+// SubTransaction represents a sub-transaction of a YNAB transaction
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type SubTransaction struct {
 	Id                    string `json:"id"`
 	TransactionId         string `json:"transaction_id"`
@@ -50,7 +53,8 @@ type SubTransaction struct {
 	Deleted               bool   `json:"deleted"`
 }
 
-// SaveTransaction represents the schema for creating a new transaction
+// SaveTransaction represents the schema for creating a new YNAB transaction
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type SaveTransaction struct {
 	AccountId       *string              `json:"account_id"`
 	Date            string               `json:"date"`
@@ -66,7 +70,8 @@ type SaveTransaction struct {
 	SubTransactions []SaveSubTransaction `json:"subtransactions"`
 }
 
-// SaveSubTransaction represents the schema for creating a new sub-transaction of a transaction
+// SaveSubTransaction represents the schema for creating a new sub-transaction of a YNAB transaction
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type SaveSubTransaction struct {
 	Amount     int64   `json:"amount"`
 	PayeeId    *string `json:"payee_id"`
@@ -75,7 +80,7 @@ type SaveSubTransaction struct {
 	Memo       *string `json:"memo"`
 }
 
-// CreateTransaction creates a new transaction for a budget
+// CreateTransaction creates a new YNAB transaction for a YNAB budget
 // POST https://api.ynab.com/v1/budgets/{budget_id}/transactions
 func (client *APIClient) CreateTransaction(budgetId string, transaction SaveTransaction) (TransactionDetail, error) {
 	transactionBody := struct {
@@ -104,7 +109,7 @@ func (client *APIClient) CreateTransaction(budgetId string, transaction SaveTran
 	return transactionResponse.Data.Transaction, nil
 }
 
-// CreateTransactions creates new transactions for a budget
+// CreateTransactions creates new YNAB transactions for a YNAB budget
 // POST https://api.ynab.com/v1/budgets/{budget_id}/transactions
 func (client *APIClient) CreateTransactions(budgetId string, transactions []SaveTransaction) ([]TransactionDetail, error) {
 	transactionsBody := struct {

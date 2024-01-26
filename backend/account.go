@@ -1,6 +1,7 @@
 package backend
 
-// Account represents an account
+// Account represents a YNAB account
+// This struct corresponds to the data structure defined in the YNAB API documentation
 type Account struct {
 	Id                  string           `json:"id"`
 	Name                string           `json:"name"`
@@ -22,16 +23,19 @@ type Account struct {
 	Deleted             bool             `json:"deleted"`
 }
 
+// Accounts represents a collection of YNAB accounts
 type Accounts []Account
 
+// SharedMonthlyExpensesAccountName is the predefined name of the YNAB account designated for shared monthly expenses
 const SharedMonthlyExpensesAccountName string = "Millennium bcp"
+
+// IndividualMonthlyExpensesAccountName is the predefined name of the YNAB account designated for individual monthly expenses
 const IndividualMonthlyExpensesAccountName string = "CGD"
 
-func (accounts *Accounts) GetMonthlyExpensesAccount() Account {
+// GetMonthlyExpensesAccount fetches the YNAB account designated for monthly expenses based on its name
+func (accounts *Accounts) GetMonthlyExpensesAccount(accountName string) Account {
 	for _, account := range *accounts {
-		if !account.Closed && !account.Deleted &&
-			(account.Name == SharedMonthlyExpensesAccountName ||
-				account.Name == IndividualMonthlyExpensesAccountName) {
+		if !account.Closed && !account.Deleted && account.Name == accountName {
 			return account
 		}
 	}

@@ -88,7 +88,7 @@ For the shared expenses, under the shared budget in YNAB and for the shared mont
 For the individual share, under the individual budget in YNAB and for the individual monthly expenses account, a main transaction is created encompassing the total individual share amount. Sub-transactions are nested within, capturing each individual's share for every expense category.
 
 > [!WARNING]  
-> Without a valid YNAB Personal Access Token, the application won't load properly.
+> Without a valid YNAB Personal Access Token, the application won't load properly. This token should be configured in the constant `AccessToken` located in the `backend/api_client.go` file.
 
 ## 🧑‍💻 Development mode
 
