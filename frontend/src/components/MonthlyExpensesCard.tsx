@@ -62,7 +62,7 @@ function MonthlyExpenseInput({ categoryName, amount, onChange }) {
         { MonthlyExpenseInputLabel({categoryName}) }
         <InputGroup size="md">
           <InputLeftAddon children="€"/>
-          <NumberInput defaultValue={0} precision={2}>
+          <NumberInput min={0} defaultValue={0} precision={2}>
             <NumberInputField
               placeholder="Enter an amount"
               name={categoryName}
@@ -87,7 +87,7 @@ function MonthlyExpenseDisabledInput({ categoryName, amount }) {
             isDisabled={true}
             placeholder="Enter an amount"
             name={categoryName}
-            value={parseFloat(amount || 0).toFixed(2)}
+            value={Math.max(parseFloat(amount) || 0, 0).toFixed(2)}
             onChange={null}
           />
         </InputGroup>

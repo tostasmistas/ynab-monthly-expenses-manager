@@ -44,7 +44,7 @@ const App = () => {
     EventsOn("sharedMonthlyExpensesSplit", function(args?: any) {
       setIndividualMonthlyExpenses(args);
       setImportButtonDisabled(false);
-      if (importButtonContent === "Done") {
+      if (importButtonContent !== "Import") {
         setImportButtonContent("Import");
       }
     })
@@ -76,13 +76,19 @@ const App = () => {
     setImportButtonDisabled(true);
     setImportButtonLoading(true);
 
-    CreateMonthlyExpensesTransactions(sharedMonthlyExpenses, individualMonthlyExpenses).then(response => {
+    CreateMonthlyExpensesTransactions(
+      new backend.CombinedMonthlyExpenses({
+        shared_monthly_expenses: sharedMonthlyExpenses,
+        individual_monthly_expenses: individualMonthlyExpenses
+      })
+    ).then(response => {
       setTimeout(() => {
         setImportButtonLoading(false);
         if (response === true) {
           setImportButtonContent("Done");
         } else {
           setImportButtonContent("Error");
+          setSplitButtonDisabled(false);
         }
       }, 1000);
     });

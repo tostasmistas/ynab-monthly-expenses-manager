@@ -14,7 +14,7 @@
 
 ## 💰 About
 
-As a long-time YNAB user managing both shared and individual budgets, I grappled each month with the repetitive task of manually entering and splitting household expenses.
+As a long-time YNAB user managing both a shared and an individual budget, I grappled each month with the repetitive task of manually entering and splitting household expenses.
 This challenge motivated me to create a personalized application that simplifies and automates these processes.
 
 ### 🚀 Features 
@@ -23,7 +23,7 @@ This challenge motivated me to create a personalized application that simplifies
 
 - **Expense split**: Automatically calculates the individual share for each expense category.
 
-- **YNAB integration**: Seamlessly integrates with YNAB, automatically inputting the shared and individual expense transactions.
+- **YNAB integration**: Seamlessly integrates with YNAB, automating the input of shared and individual expense transactions.
 
 <br />
 
@@ -83,9 +83,11 @@ Applying the algorithm step by step:
 
 After inputting and splitting the monthly household expenses, the final step is seamless integration with YNAB, initiated by clicking the `Import` button.
 
-For the shared expenses, under the shared budget in YNAB and for the shared monthly expenses account, distinct transactions are created for each category. These transactions detail the expense amount, the payee, and the billing cycle in the memo field.
+For the shared expenses, under the shared budget in YNAB and for the shared monthly expenses account, distinct transactions are created for each expense category.
+These transactions detail the expense amount, the payee, and the billing cycle in the memo field. Additionally, separate transactions are created for the individual shares that each person will contribute to cover the total shared expenses.
 
-For the individual share, under the individual budget in YNAB and for the individual monthly expenses account, a main transaction is created encompassing the total individual share amount. Sub-transactions are nested within, capturing each individual's share for every expense category.
+For the individual share, under the individual budget in YNAB and for the individual monthly expenses account, a main transaction is created encompassing the total individual share amount.
+Sub-transactions are nested within, capturing each individual's share for every expense category.
 
 > [!WARNING]  
 > Without a valid YNAB Personal Access Token, the application won't load properly. This token should be configured in the constant `AccessToken` located in the `backend/api_client.go` file.

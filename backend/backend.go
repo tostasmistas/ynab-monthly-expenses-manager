@@ -12,10 +12,9 @@ import (
 
 // Backend encapsulates the YNAB API client and the shared and individual monthly expenses
 type Backend struct {
-	Context                   context.Context
-	APIClient                 *APIClient
-	SharedMonthlyExpenses     *MonthlyExpenses
-	IndividualMonthlyExpenses *MonthlyExpenses
+	Context                 context.Context
+	APIClient               *APIClient
+	CombinedMonthlyExpenses *CombinedMonthlyExpenses
 }
 
 // SetupBackend creates a new Backend instance
@@ -61,15 +60,17 @@ func SetupBackend() *Backend {
 
 		individualMonthlyExpenses.Expenses[categoryName] = &MonthlyExpense{
 			CategoryId: to.StringPtr(category.Id),
-			PayeeName:  to.StringPtr(GetIndividualMonthlyExpensePayeeName()),
+			PayeeName:  to.StringPtr(GetIndividualMonthlyExpensePayeeName(SharedBudgetName)),
 			Memo:       to.StringPtr(GetIndividualMonthlyExpenseMemo()),
 		}
 	}
 
 	return &Backend{
-		APIClient:                 &apiClient,
-		SharedMonthlyExpenses:     &sharedMonthlyExpenses,
-		IndividualMonthlyExpenses: &individualMonthlyExpenses,
+		APIClient: &apiClient,
+		CombinedMonthlyExpenses: &CombinedMonthlyExpenses{
+			SharedMonthlyExpenses:     &sharedMonthlyExpenses,
+			IndividualMonthlyExpenses: &individualMonthlyExpenses,
+		},
 	}
 }
 
@@ -79,37 +80,36 @@ func (backend *Backend) Startup(context context.Context) {
 	backend.Context = context
 
 	runtime.EventsOn(context, "sharedMonthlyExpensesInput", func(args ...interface{}) {
-		var sharedMonthlyExpenses MonthlyExpenses
-
 		decoderConfig := &mapstructure.DecoderConfig{
 			DecodeHook: mapstructure.ComposeDecodeHookFunc(
 				StringToDecimalHookFunc(),
 			),
-			Result: &sharedMonthlyExpenses,
+			Result: &backend.CombinedMonthlyExpenses.SharedMonthlyExpenses,
 		}
 		decoder, _ := mapstructure.NewDecoder(decoderConfig)
 		decoder.Decode(args[0])
 
-		SplitSharedMonthlyExpenses(sharedMonthlyExpenses, backend.IndividualMonthlyExpenses)
+		backend.CombinedMonthlyExpenses.SplitSharedMonthlyExpenses()
 
-		runtime.EventsEmit(context, "sharedMonthlyExpensesSplit", backend.IndividualMonthlyExpenses)
+		runtime.EventsEmit(context, "sharedMonthlyExpensesSplit", backend.CombinedMonthlyExpenses.IndividualMonthlyExpenses)
 	})
 }
 
 // DomReady emits the "backendSetupComplete" event indicating if both the shared and individual monthly expenses are valid as that is a requirement for the application
 func (backend *Backend) DomReady(context context.Context) {
 	runtime.EventsEmit(context, "backendSetupComplete",
-		backend.SharedMonthlyExpenses.IsValid() && backend.IndividualMonthlyExpenses.IsValid(),
+		backend.CombinedMonthlyExpenses.SharedMonthlyExpenses.IsValid() &&
+			backend.CombinedMonthlyExpenses.IndividualMonthlyExpenses.IsValid(),
 	)
 }
 
 // GetSharedMonthlyExpenses returns the shared monthly expenses
 func (backend *Backend) GetSharedMonthlyExpenses() *MonthlyExpenses {
-	return backend.SharedMonthlyExpenses
+	return backend.CombinedMonthlyExpenses.SharedMonthlyExpenses
 }
 
 // CreateMonthlyExpensesTransactions creates YNAB transactions for the shared and individual monthly expenses
-func (backend *Backend) CreateMonthlyExpensesTransactions(sharedMonthlyExpenses *MonthlyExpenses, individualMonthlyExpenses *MonthlyExpenses) bool {
-	return sharedMonthlyExpenses.CreateSharedMonthlyExpensesTransactions(*backend.APIClient) &&
-		individualMonthlyExpenses.CreateIndividualMonthlyExpensesTransactions(*backend.APIClient)
+func (backend *Backend) CreateMonthlyExpensesTransactions(combinedMonthlyExpenses *CombinedMonthlyExpenses) bool {
+	return combinedMonthlyExpenses.CreateSharedMonthlyExpensesTransactions(*backend.APIClient) &&
+		combinedMonthlyExpenses.CreateIndividualMonthlyExpensesTransactions(*backend.APIClient)
 }

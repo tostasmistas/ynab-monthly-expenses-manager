@@ -8,21 +8,29 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/shopspring/decimal"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 // MonthlyExpense represents a monthly expense with its YNAB category id, payee name, amount, and memo
 type MonthlyExpense struct {
-	CategoryId *string         `json:"category_id" mapstructure:"category_id"`
-	PayeeName  *string         `json:"payee_name" mapstructure:"payee_name"`
-	Amount     decimal.Decimal `json:"amount" mapstructure:"amount"`
-	Memo       *string         `json:"memo" mapstructure:"memo"`
+	CategoryId *string         `json:"category_id" mapstructure:"category_id" fake:"{uuid}"`
+	PayeeName  *string         `json:"payee_name" mapstructure:"payee_name" fake:"{company}"`
+	Amount     decimal.Decimal `json:"amount" mapstructure:"amount" fake:"skip"`
+	Memo       *string         `json:"memo" mapstructure:"memo" fake:"{sentence}"`
 }
 
 // MonthlyExpenses represents a collection of monthly expenses per category for a specific YNAB budget and account
 type MonthlyExpenses struct {
-	BudgetId  string                     `json:"budget_id" mapstructure:"budget_id"`
-	AccountId string                     `json:"account_id" mapstructure:"account_id"`
-	Expenses  map[string]*MonthlyExpense `json:"expenses" mapstructure:"expenses"`
+	BudgetId  string                     `json:"budget_id" mapstructure:"budget_id" fake:"{uuid}"`
+	AccountId string                     `json:"account_id" mapstructure:"account_id" fake:"{uuid}"`
+	Expenses  map[string]*MonthlyExpense `json:"expenses" mapstructure:"expenses" fake:"skip"`
+}
+
+// CombinedMonthlyExpenses represents a collection of monthly expenses, combining both the shared and individual monthly expenses
+type CombinedMonthlyExpenses struct {
+	SharedMonthlyExpenses     *MonthlyExpenses `json:"shared_monthly_expenses"`
+	IndividualMonthlyExpenses *MonthlyExpenses `json:"individual_monthly_expenses"`
 }
 
 // IsValid checks if a collection of monthly expenses is valid by ensuring a non-empty YNAB budget id and account id, and having exactly 4 monthly expenses
@@ -54,7 +62,9 @@ func GetSharedMonthlyExpensePayeeName(categoryName string) string {
 func GetSharedMonthlyExpenseMemo(categoryName string) string {
 	switch categoryName {
 	case "Condominium":
-		return time.Now().AddDate(0, 1, 0).Format("January 2006")
+		currentMonth := time.Now()
+		nextMonth := time.Date(currentMonth.Year(), currentMonth.Month()+1, 1, 0, 0, 0, 0, currentMonth.Location())
+		return nextMonth.Format("January 2006")
 	case "Electricity":
 		return getSharedMonthlyExpenseBillingCycleMemo(11, 10)
 	case "Water":
@@ -72,7 +82,7 @@ func GetSharedMonthlyExpenseMemo(categoryName string) string {
 // getSharedMonthlyExpenseBillingCycleMemo returns the predefined memo, based on the billing cycle, of a shared expense
 func getSharedMonthlyExpenseBillingCycleMemo(billingCycleStart int, billingCycleEnd int) string {
 	currentMonth := time.Now()
-	pastMonth := time.Now().AddDate(0, -1, 0)
+	pastMonth := time.Date(currentMonth.Year(), currentMonth.Month()-1, 1, 0, 0, 0, 0, currentMonth.Location())
 
 	return fmt.Sprintf("%s - %d %s to %d %s",
 		pastMonth.Format("January 2006"),
@@ -82,20 +92,29 @@ func getSharedMonthlyExpenseBillingCycleMemo(billingCycleStart int, billingCycle
 }
 
 // GetIndividualMonthlyExpensePayeeName returns the predefined payee name for an individual monthly expense
-func GetIndividualMonthlyExpensePayeeName() string {
-	return fmt.Sprintf("Transfer: %s", SharedBudgetName)
+func GetIndividualMonthlyExpensePayeeName(payeeName string) string {
+	return fmt.Sprintf("Transfer: %s", payeeName)
 }
 
 // GetIndividualMonthlyExpenseMemo returns the predefined memo for an individual monthly expense
 func GetIndividualMonthlyExpenseMemo() string {
-	return time.Now().Format("January 2006")
+	return fmt.Sprintf("%s - Household Expenses", time.Now().Format("January 2006"))
 }
 
 // SplitSharedMonthlyExpenses calculates the individual share for each monthly expense category
-func SplitSharedMonthlyExpenses(sharedMonthlyExpenses MonthlyExpenses, individualMonthlyExpenses *MonthlyExpenses) {
+func (combinedMonthlyExpenses *CombinedMonthlyExpenses) SplitSharedMonthlyExpenses() {
+	sharedMonthlyExpenses := combinedMonthlyExpenses.SharedMonthlyExpenses
+	individualMonthlyExpenses := combinedMonthlyExpenses.IndividualMonthlyExpenses
+
 	roundUp := rand.Float64() <= 0.4
 
-	for categoryName, sharedMonthlyExpense := range sharedMonthlyExpenses.Expenses {
+	categoryNames := maps.Keys(sharedMonthlyExpenses.Expenses)
+	slices.Sort(categoryNames)
+
+	for _, categoryName := range categoryNames {
+		sharedMonthlyExpense := sharedMonthlyExpenses.Expenses[categoryName]
+		individualMonthlyExpense := individualMonthlyExpenses.Expenses[categoryName]
+
 		splitExpenseAmount := sharedMonthlyExpense.Amount.Div(decimal.NewFromInt(2))
 		roundedSplitExpenseAmount := sharedMonthlyExpense.Amount.DivRound(decimal.NewFromInt(2), 2)
 
@@ -109,67 +128,138 @@ func SplitSharedMonthlyExpenses(sharedMonthlyExpenses MonthlyExpenses, individua
 			roundUp = !roundUp
 		}
 
-		individualMonthlyExpense := individualMonthlyExpenses.Expenses[categoryName]
 		individualMonthlyExpense.Amount = splitExpenseAmount
 	}
 }
 
-// CreateIndividualMonthlyExpensesTransactions creates the YNAB transactions for the individual monthly expenses
-func (monthlyExpenses *MonthlyExpenses) CreateIndividualMonthlyExpensesTransactions(client APIClient) bool {
-	var subTransactions []SaveSubTransaction
-	var sampleExpense MonthlyExpense
-	var totalTransactionAmount int64
+// CreateSharedMonthlyExpensesTransactions creates the YNAB transactions for the shared monthly expenses
+func (combinedMonthlyExpenses *CombinedMonthlyExpenses) CreateSharedMonthlyExpensesTransactions(client APIClient) bool {
+	sharedMonthlyExpenses := combinedMonthlyExpenses.SharedMonthlyExpenses
+	individualMonthlyExpenses := combinedMonthlyExpenses.IndividualMonthlyExpenses
 
-	for _, monthlyExpense := range monthlyExpenses.Expenses {
-		sampleExpense = *monthlyExpense
-		subTransactionAmount := monthlyExpense.Amount.Mul(decimal.NewFromInt(1000)).IntPart()
-		totalTransactionAmount += subTransactionAmount
+	var transactions []SaveTransaction
 
-		subTransactions = append(subTransactions,
-			SaveSubTransaction{
-				Amount:     -subTransactionAmount,
-				CategoryId: monthlyExpense.CategoryId,
-			},
+	var subTransactionsForMyIndividualShare []SaveSubTransaction
+	var totalMyIndividualShareAmount decimal.Decimal
+
+	var subTransactionsForOtherIndividualShare []SaveSubTransaction
+	var totalOtherIndividualShareAmount decimal.Decimal
+
+	for categoryName, monthlyExpense := range sharedMonthlyExpenses.Expenses {
+		transactionAmount := monthlyExpense.Amount
+
+		transactions = append(transactions,
+			createTransaction(
+				sharedMonthlyExpenses.AccountId,
+				transactionAmount.Neg(),
+				monthlyExpense.PayeeName,
+				monthlyExpense.CategoryId,
+				monthlyExpense.Memo,
+				nil,
+			),
+		)
+
+		myIndividualShareAmount := individualMonthlyExpenses.Expenses[categoryName].Amount
+		totalMyIndividualShareAmount = totalMyIndividualShareAmount.Add(myIndividualShareAmount)
+
+		otherIndividualShareAmount := transactionAmount.Sub(myIndividualShareAmount)
+		totalOtherIndividualShareAmount = totalOtherIndividualShareAmount.Add(otherIndividualShareAmount)
+
+		subTransactionsForMyIndividualShare = append(subTransactionsForMyIndividualShare,
+			createSubTransaction(
+				myIndividualShareAmount,
+				monthlyExpense.CategoryId,
+			),
+		)
+
+		subTransactionsForOtherIndividualShare = append(subTransactionsForOtherIndividualShare,
+			createSubTransaction(
+				otherIndividualShareAmount,
+				monthlyExpense.CategoryId,
+			),
 		)
 	}
 
-	transaction := SaveTransaction{
-		AccountId:       to.StringPtr(monthlyExpenses.AccountId),
-		Date:            time.Now().Format("2006-01-02"),
-		Amount:          -totalTransactionAmount,
-		PayeeName:       sampleExpense.PayeeName,
-		CategoryId:      nil,
-		Memo:            sampleExpense.Memo,
-		Cleared:         "uncleared",
-		Approved:        false,
-		SubTransactions: subTransactions,
-	}
+	transactions = append(transactions,
+		createTransaction(
+			sharedMonthlyExpenses.AccountId,
+			totalMyIndividualShareAmount,
+			to.StringPtr(GetIndividualMonthlyExpensePayeeName("Magui")),
+			nil,
+			to.StringPtr(GetIndividualMonthlyExpenseMemo()),
+			subTransactionsForMyIndividualShare,
+		),
+		createTransaction(
+			sharedMonthlyExpenses.AccountId,
+			totalOtherIndividualShareAmount,
+			to.StringPtr(GetIndividualMonthlyExpensePayeeName("Jão")),
+			nil,
+			to.StringPtr(GetIndividualMonthlyExpenseMemo()),
+			subTransactionsForOtherIndividualShare,
+		),
+	)
 
-	_, err := client.CreateTransaction(monthlyExpenses.BudgetId, transaction)
+	_, err := client.CreateTransactions(sharedMonthlyExpenses.BudgetId, transactions)
 
 	return err == nil
 }
 
-// CreateSharedMonthlyExpensesTransactions creates the YNAB transactions for the shared monthly expenses
-func (monthlyExpenses *MonthlyExpenses) CreateSharedMonthlyExpensesTransactions(client APIClient) bool {
-	var transactions []SaveTransaction
+// CreateIndividualMonthlyExpensesTransactions creates the YNAB transactions for the individual monthly expenses
+func (combinedMonthlyExpenses *CombinedMonthlyExpenses) CreateIndividualMonthlyExpensesTransactions(client APIClient) bool {
+	individualMonthlyExpenses := combinedMonthlyExpenses.IndividualMonthlyExpenses
 
-	for _, monthlyExpense := range monthlyExpenses.Expenses {
-		transactions = append(transactions,
-			SaveTransaction{
-				AccountId:  to.StringPtr(monthlyExpenses.AccountId),
-				Date:       time.Now().Format("2006-01-02"),
-				Amount:     -monthlyExpense.Amount.Mul(decimal.NewFromInt(1000)).IntPart(),
-				PayeeName:  monthlyExpense.PayeeName,
-				CategoryId: monthlyExpense.CategoryId,
-				Memo:       monthlyExpense.Memo,
-				Cleared:    "uncleared",
-				Approved:   false,
-			},
+	var sampleExpense MonthlyExpense
+
+	var subTransactions []SaveSubTransaction
+	var totalTransactionAmount decimal.Decimal
+
+	for _, monthlyExpense := range individualMonthlyExpenses.Expenses {
+		sampleExpense = *monthlyExpense
+
+		subTransactionAmount := monthlyExpense.Amount
+		totalTransactionAmount = totalTransactionAmount.Add(subTransactionAmount)
+
+		subTransactions = append(subTransactions,
+			createSubTransaction(
+				subTransactionAmount.Neg(),
+				monthlyExpense.CategoryId,
+			),
 		)
 	}
 
-	_, err := client.CreateTransactions(monthlyExpenses.BudgetId, transactions)
+	transaction := createTransaction(
+		individualMonthlyExpenses.AccountId,
+		totalTransactionAmount.Neg(),
+		sampleExpense.PayeeName,
+		nil,
+		sampleExpense.Memo,
+		subTransactions,
+	)
+
+	_, err := client.CreateTransaction(individualMonthlyExpenses.BudgetId, transaction)
 
 	return err == nil
+}
+
+// createTransaction creates a new SaveTransaction instance
+func createTransaction(accountId string, amount decimal.Decimal, payeeName *string, categoryId *string, memo *string, subTransactions []SaveSubTransaction) SaveTransaction {
+	return SaveTransaction{
+		AccountId:       to.StringPtr(accountId),
+		Date:            time.Now().Format("2006-01-02"),
+		Amount:          amount.Mul(decimal.NewFromInt(1000)).IntPart(),
+		PayeeName:       payeeName,
+		CategoryId:      categoryId,
+		Memo:            memo,
+		Cleared:         "uncleared",
+		Approved:        false,
+		SubTransactions: subTransactions,
+	}
+}
+
+// createSubTransaction creates a new SaveSubTransaction instance
+func createSubTransaction(amount decimal.Decimal, categoryId *string) SaveSubTransaction {
+	return SaveSubTransaction{
+		Amount:     amount.Mul(decimal.NewFromInt(1000)).IntPart(),
+		CategoryId: categoryId,
+	}
 }
