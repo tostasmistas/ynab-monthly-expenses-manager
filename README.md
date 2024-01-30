@@ -38,6 +38,10 @@ If you have questions or suggestions for improvement, let's connect and make man
 
 Input the total monthly expense for each category - `Condominium`, `Electricity`, `Water`, and `TV / Internet / Phone` - under the card named `Total Monthly Expenses`.
 
+<p align="center">
+  <img width="700" alt="Screenshot 2024-01-30 at 18 03 57" src="https://github.com/tostasmistas/ynab-monthly-expenses-manager/assets/11311824/bf5f23a3-af1c-4d87-a10d-751ca9cf3a4d">
+</p>
+
 2. **Expense split**
 
 After entering the total monthly expenses for all categories, clicking the `Split` button triggers the application to calculate and display, under the card named `Individual share`, a breakdown of the individual share for each expense category.
@@ -48,6 +52,10 @@ The application utilizes a rounding algorithm to fairly distribute shared monthl
 - In cases where the resulting individual share is not an exact division by 2, requiring rounding to adhere to the 2-decimal place constraint inherent in monetary values, the algorithm employs a balanced rounding approach:
   - Initially, variability is introduced by assigning a 50% chance of rounding up the expense. Then, subsequent rounding conditions alternate based on the previous rounding result, i.e., if the current expense is rounded up, the subsequent one will be rounded down if needed, and vice versa.
   - This variability in rounding is designed for fairness. Even if only one expense requires rounding each month, the algorithm introduces a 50% chance of rounding up initially, ensuring an equitable distribution of rounding over time, providing both individuals with an equal chance of experiencing rounded-up or rounded-down amounts.
+ 
+<p align="center">
+  <img width="700" alt="Screenshot 2024-01-30 at 18 05 59" src="https://github.com/tostasmistas/ynab-monthly-expenses-manager/assets/11311824/725c405a-43cb-46b6-85a3-392df8711b10">
+</p>
 
 <details>
 <summary>Expense split example</summary>
@@ -88,6 +96,24 @@ These transactions detail the expense amount, the payee, and the billing cycle i
 
 For the individual share, under the individual budget in YNAB and for the individual monthly expenses account, a main transaction is created encompassing the total individual share amount.
 Sub-transactions are nested within, capturing each individual's share for every expense category.
+
+<p align="center">
+  <img width="700" alt="Screenshot 2024-01-30 at 18 07 01" src="https://github.com/tostasmistas/ynab-monthly-expenses-manager/assets/11311824/f0981931-b55f-42d7-afa0-43c09c34a3cd">
+</p>
+
+<p align="center">
+  <kbd><img width="1508" alt="Screenshot 2024-01-30 at 18 40 22" src="https://github.com/tostasmistas/ynab-monthly-expenses-manager/assets/11311824/f0cb75e3-a340-4327-8080-64285865b616"></kbd>
+  <sub>Transactions for each expense category and for each individual share under the shared budget in YNAB</sub>
+</p>
+
+<br />
+
+<p align="center">
+  <kbd><img width="1508" alt="Screenshot 2024-01-30 at 18 40 04" src="https://github.com/tostasmistas/ynab-monthly-expenses-manager/assets/11311824/20a93334-70f1-4416-ac56-32e86552c759"></kbd>
+  <sub>Transaction for the individual share under the individual budget in YNAB</sub>
+</p>
+
+<br />
 
 > [!WARNING]  
 > Without a valid YNAB Personal Access Token, the application won't load properly. This token should be configured in the constant `AccessToken` located in the `backend/api_client.go` file.
